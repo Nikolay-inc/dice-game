@@ -1,95 +1,83 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { useState } from 'react';
+import { Box, Container, SelectChangeEvent } from '@mui/material';
+import { AlertMessage, Button, Slider, RadioGroup } from './components/ui';
+import HistoryTable from './components/HistoryTable';
+import { CONDITIONS, MAX_HISTORY } from './const';
+import { ConditionType } from './const/types';
+import { HistoryItem } from './components/HistoryTable/types';
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [condition, setCondition] = useState<ConditionType>('greater');
+  const [threshold, setThreshold] = useState<number>(50);
+  const [result, setResult] = useState<number | null>(null);
+  const [isWin, setIsWin] = useState<boolean | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showResult, setShowResult] = useState<boolean>(false);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const handleThresholdChange = (value: number) => {
+    setThreshold(value);
+  };
+
+  const handleConditionChange = (e: SelectChangeEvent) => {
+    setCondition(e.target.value as ConditionType);
+  };
+
+  const playGame = () => {
+    const rolled = Math.floor(Math.random() * 100) + 1;
+    const win = condition === 'greater' ? rolled > threshold : rolled < threshold;
+
+    setResult(rolled);
+    setIsWin(win);
+    setShowResult(true);
+
+    const dateNow = new Date();
+    const time = dateNow.toLocaleTimeString('en-US', { hour12: false });
+    const conditionalLabel = condition === 'greater' ? CONDITIONS[1].label : CONDITIONS[0].label;
+
+    setHistory((prev) => {
+      const newHistory = [
+        { result: rolled, isWin: win, time, conditionalLabel, threshold },
+        ...prev,
+      ];
+      return newHistory.slice(0, MAX_HISTORY);
+    });
+  };
+
+  return (
+    <div>
+      <Container maxWidth={false} disableGutters sx={{ mt: 5, maxWidth: '320px' }}>
+        <AlertMessage showResult={showResult} isWin={isWin} condition={condition} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: '100px' }}>
+          <Box
+            sx={{
+              width: '320px',
+              height: '200px',
+              backgroundColor: 'var(--light-gray)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              alignSelf: 'center',
+              fontSize: '96px',
+              fontWeight: 300,
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+            {result || threshold}
+          </Box>
+
+          <RadioGroup
+            condition={condition}
+            handleConditionChange={handleConditionChange}
+            conditions={CONDITIONS}
           />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Slider threshold={threshold} handleThresholdChange={handleThresholdChange} />
+          <Button title={'Play'} onClick={playGame} />
+        </Box>
+      </Container>
+
+      <Container maxWidth={false} disableGutters sx={{ maxWidth: '600px', width: '100%', mt: 3 }}>
+        <HistoryTable history={history} />
+      </Container>
     </div>
   );
 }
